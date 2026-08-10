@@ -1,0 +1,5 @@
+# calc_flow_lookup.R
+& "C:\Program Files\R\R-4.4.1\bin\Rscript.exe" .\scripts\calc_flow_lookup.R ".\Data\260603\FACS_0306.xlsx" ".\260603\flow_rate_lookup_0306.csv"
+
+# update_mastersheet.R
+"& "C:\Program Files\R\R-4.4.1\bin\Rscript.exe" ".\scripts\update_mastersheet.R" ".\260513" ".\260513\flow_rate_lookup_1305.csv" "Loki_Cultures_Master_Reference.xlsx"
