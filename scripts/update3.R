@@ -154,18 +154,11 @@ append_by_culture <- function(existing_df, new_df) {
     paste(df$`Culture ID`, norm_date_chr(df$`Sample Date`), sep = "|")
   }
 
-  insert_rows <- function(out, insert_after, add_rows) {
-    if (nrow(out) == 0 || insert_after <= 0) {
-      return(rbind(add_rows, out))
-    }
-    if (insert_after >= nrow(out)) {
-      return(rbind(out, add_rows))
-    }
-    rbind(
-      out[1:insert_after, , drop = FALSE],
-      add_rows,
-      out[(insert_after + 1):nrow(out), , drop = FALSE]
-    )
+  sort_block_by_date <- function(df) {
+    if (nrow(df) <= 1) return(df)
+    sample_dates <- suppressWarnings(as.Date(norm_date_chr(df$`Sample Date`), format = "%d.%m.%Y"))
+    date_key <- ifelse(is.na(sample_dates), Inf, as.numeric(sample_dates))
+    df[order(date_key, seq_len(nrow(df))), , drop = FALSE]
   }
 
   out <- existing_df
@@ -173,37 +166,44 @@ append_by_culture <- function(existing_df, new_df) {
   for (key in unique(make_key(new_df))) {
 
     add_rows <- new_df[make_key(new_df) == key, , drop = FALSE]
-    idx <- which(make_key(out) == key)
+    culture_value <- add_rows$`Culture ID`[1]
+    culture_idx <- which(out$`Culture ID` == culture_value)
 
-    if (length(idx) == 0) {
-
-      culture_idx <- which(out$`Culture ID` == add_rows$`Culture ID`[1])
-
-      if (length(culture_idx) == 0) {
-        out <- rbind(out, add_rows)
-      } else {
-        out <- insert_rows(out, max(culture_idx), add_rows)
-      }
-
-    } else {
-
-      if ("Inoculation Date" %in% names(out) && "Inoculation Date" %in% names(add_rows)) {
-        existing_inoc <- out$`Inoculation Date`[idx]
-        existing_inoc_chr <- trimws(as.character(existing_inoc))
-        valid_existing <- !is.na(existing_inoc) & nzchar(existing_inoc_chr) & existing_inoc_chr != "NA"
-
-        if (any(valid_existing)) {
-          inoc_value <- existing_inoc[which(valid_existing)[1]]
-          add_inoc_chr <- trimws(as.character(add_rows$`Inoculation Date`))
-          needs_fill <- is.na(add_rows$`Inoculation Date`) | !nzchar(add_inoc_chr) | add_inoc_chr == "NA"
-          add_rows$`Inoculation Date`[needs_fill] <- inoc_value
-        }
-      }
-
-      insert_after <- min(idx) - 1
-      out <- out[-idx, , drop = FALSE]
-      out <- insert_rows(out, insert_after, add_rows)
+    if (length(culture_idx) == 0) {
+      out <- rbind(out, add_rows)
+      next
     }
+
+    block <- out[culture_idx, , drop = FALSE]
+    idx <- which(make_key(block) == key)
+
+    if (length(idx) > 0 && "Inoculation Date" %in% names(block) && "Inoculation Date" %in% names(add_rows)) {
+      existing_inoc <- block$`Inoculation Date`[idx]
+      existing_inoc_chr <- trimws(as.character(existing_inoc))
+      valid_existing <- !is.na(existing_inoc) & nzchar(existing_inoc_chr) & existing_inoc_chr != "NA"
+
+      if (any(valid_existing)) {
+        inoc_value <- existing_inoc[which(valid_existing)[1]]
+        add_inoc_chr <- trimws(as.character(add_rows$`Inoculation Date`))
+        needs_fill <- is.na(add_rows$`Inoculation Date`) | !nzchar(add_inoc_chr) | add_inoc_chr == "NA"
+        add_rows$`Inoculation Date`[needs_fill] <- inoc_value
+      }
+    }
+
+    if (length(idx) > 0) {
+      block <- block[-idx, , drop = FALSE]
+    }
+
+    block <- rbind(block, add_rows)
+    block <- sort_block_by_date(block)
+
+    before_idx <- min(culture_idx)
+    after_idx <- max(culture_idx)
+
+    before_block <- if (before_idx > 1) out[seq_len(before_idx - 1), , drop = FALSE] else out[0, , drop = FALSE]
+    after_block <- if (after_idx < nrow(out)) out[(after_idx + 1):nrow(out), , drop = FALSE] else out[0, , drop = FALSE]
+
+    out <- rbind(before_block, block, after_block)
   }
 
   rownames(out) <- NULL
