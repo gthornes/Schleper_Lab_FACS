@@ -161,6 +161,26 @@ append_by_culture <- function(existing_df, new_df) {
     df[order(date_key, seq_len(nrow(df))), , drop = FALSE]
   }
 
+  fill_inoculation_from_block <- function(block, add_rows) {
+    if (!"Inoculation Date" %in% names(block) || !"Inoculation Date" %in% names(add_rows)) {
+      return(add_rows)
+    }
+
+    existing_inoc <- block$`Inoculation Date`
+    existing_inoc_chr <- trimws(as.character(existing_inoc))
+    valid_existing <- !is.na(existing_inoc) & nzchar(existing_inoc_chr) & existing_inoc_chr != "NA"
+
+    if (!any(valid_existing)) {
+      return(add_rows)
+    }
+
+    inoc_value <- existing_inoc[which(valid_existing)[1]]
+    add_inoc_chr <- trimws(as.character(add_rows$`Inoculation Date`))
+    needs_fill <- is.na(add_rows$`Inoculation Date`) | !nzchar(add_inoc_chr) | add_inoc_chr == "NA"
+    add_rows$`Inoculation Date`[needs_fill] <- inoc_value
+    add_rows
+  }
+
   out <- existing_df
 
   for (key in unique(make_key(new_df))) {
@@ -175,21 +195,9 @@ append_by_culture <- function(existing_df, new_df) {
     }
 
     block <- out[culture_idx, , drop = FALSE]
+    add_rows <- fill_inoculation_from_block(block, add_rows)
+
     idx <- which(make_key(block) == key)
-
-    if (length(idx) > 0 && "Inoculation Date" %in% names(block) && "Inoculation Date" %in% names(add_rows)) {
-      existing_inoc <- block$`Inoculation Date`[idx]
-      existing_inoc_chr <- trimws(as.character(existing_inoc))
-      valid_existing <- !is.na(existing_inoc) & nzchar(existing_inoc_chr) & existing_inoc_chr != "NA"
-
-      if (any(valid_existing)) {
-        inoc_value <- existing_inoc[which(valid_existing)[1]]
-        add_inoc_chr <- trimws(as.character(add_rows$`Inoculation Date`))
-        needs_fill <- is.na(add_rows$`Inoculation Date`) | !nzchar(add_inoc_chr) | add_inoc_chr == "NA"
-        add_rows$`Inoculation Date`[needs_fill] <- inoc_value
-      }
-    }
-
     if (length(idx) > 0) {
       block <- block[-idx, , drop = FALSE]
     }

@@ -1,5 +1,8 @@
 # calc_flow_lookup.R
-& "C:\Program Files\R\R-4.4.1\bin\Rscript.exe" .\scripts\calc_flow_lookup.R ".\Data\260603\FACS_0306.xlsx" ".\260603\flow_rate_lookup_0306.csv"
+& "C:\Program Files\R\R-4.4.1\bin\Rscript.exe" .\scripts\calc_flow_lookup.R ".\Data\260729\Flow_rate_2907.xlsx" ".\Data\260729\flow_rate_lookup_2907.csv"
 
-# update_mastersheet.R
-"& "C:\Program Files\R\R-4.4.1\bin\Rscript.exe" ".\scripts\update_mastersheet.R" ".\260513" ".\260513\flow_rate_lookup_1305.csv" "Loki_Cultures_Master_Reference.xlsx"
+# update_3.R
+& "C:\Program Files\R\R-4.4.1\bin\Rscript.exe" ".\scripts\update3.R" ".\Data\260729" ".\Data\260729\flow_rate_lookup_2907.csv" "Loki_Cultures_Master_Reference.xlsx"
+
+# populate.links.R
+& "C:\Program Files\R\R-4.4.1\bin\Rscript.exe" ".\scripts\populate.links.R"   
